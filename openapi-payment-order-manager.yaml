@@ -1,0 +1,897 @@
+openapi: 3.0.2
+info:
+  title: Payment Order Manager API (BETA)
+  description: |
+    Payment Order Manager API (BETA)
+
+
+    The **Payment Order Manager API** offers endpoints to manage payment orders.
+
+    This API is under development and changes can occur anytime.
+
+    ## __Change List__
+
+    __Change List__
+    <table>
+      <tr>
+        <td><b>Version</b></td>
+        <td><b>description</b></td>
+        <td><b>Author</b></td>
+        <td><b>Date</b></td>
+      </tr>
+      <tr>
+        <td>1.0.0-beta</td>
+        <td>
+          <li>Initial API with Ping</li>
+          <li>added Payments endpoints</li>
+        </td>
+        <td>Gian Defilla</td>
+        <td>21.06.2022</td>
+      </tr>
+    </table>
+  contact:
+    name: Gian Defilla
+    email: gian.defilla@crealogix.com
+  version: 1.0.0-beta
+servers:
+  - url: '{schema}://{host}:{port}/paymentordermanager/api/v1'
+    variables:
+      schema:
+        enum:
+          - https
+          - http
+        default: https
+      host:
+        default: localhost
+      port:
+        default: '7511'
+tags:
+  - name: Utilities
+    description: Utility API-functions
+  - name: Payments
+    description: Payment lists and search API-functions
+paths:
+  #Ping
+  /util/ping:
+    get:
+      tags:
+        - Utilities
+      summary: A simple Ping request to verify if the API works
+      description: Ping the API server.
+      operationId: ping
+      responses:
+        200:
+          description: The ping was successfull
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PingResponse'
+  /util/ping_secure:
+    get:
+      tags:
+        - Utilities
+      summary: A simple Ping request to verify if the API and JWT verification works
+      description: Ping the API server with JWT verification.
+      operationId: pingSecure
+      responses:
+        200:
+          description: The ping was successfull
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PingResponse'
+      security:
+        - RchInternalIamJwtBearer: []
+
+  # Payments
+  /payment/search_scheduled:
+    post:
+      tags:
+        - Payments
+      summary: Returns all scheduled payments.
+      description: |
+        Provides an array of all **scheduled payments** the user is allowed to see with optionally
+        applied filter-query. This unspecific service might be used for payment overviews
+        or listings.
+      operationId: listPayments
+      requestBody:
+        description: Contains the filters for payments, paging and sorting information
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentsSearchRequest'
+        required: true
+      responses:
+        201:
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payments'
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        404:
+          $ref: '#/components/responses/NotFound'
+        422:
+          $ref: '#/components/responses/UnprocessableEntity'
+        default:
+          $ref: '#/components/responses/Default'
+      security:
+        - RchInternalIamJwtBearer: []
+  /payment/search_processed:
+    post:
+      tags:
+        - Payments
+      summary: Returns all archived payments.
+      description: |
+        Provides an array of all **archived payments** (booked or other final state) the user is allowed to see with optionally
+        applied filter-query. This unspecific service might be used for payment overviews
+        or listings.
+      operationId: listArchivedPayments
+      requestBody:
+        description: Contains the filters for payments, paging and sorting information
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentsSearchRequest'
+        required: true
+      responses:
+        201:
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payments'
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        404:
+          $ref: '#/components/responses/NotFound'
+        422:
+          $ref: '#/components/responses/UnprocessableEntity'
+        default:
+          $ref: '#/components/responses/Default'
+      security:
+        - RchInternalIamJwtBearer: []
+  /payment/search_standing_orders:
+    post:
+      tags:
+        - Payments
+      summary: Returns all standing orders.
+      description: |
+        Provides an array of all **standing orders** the user is allowed to see with optionally
+        applied filter-query. This unspecific service might be used for payment overviews
+        or listings.
+      operationId: listStandingOrdersAsPayments
+      requestBody:
+        description: Contains the filters for payments, paging and sorting information
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentsSearchRequest'
+        required: true
+      responses:
+        201:
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payments'
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        404:
+          $ref: '#/components/responses/NotFound'
+        422:
+          $ref: '#/components/responses/UnprocessableEntity'
+        default:
+          $ref: '#/components/responses/Default'
+      security:
+        - RchInternalIamJwtBearer: []
+
+components:
+  schemas:
+
+    # Ping
+    PingMessage:
+      type: object
+      description: The Ping response message
+      required:
+        - pingMessage
+      properties:
+        pingMessage:
+          type: string
+          example: OK
+    PingResponse:
+      allOf:
+        - $ref: '#/components/schemas/ResponseStatus'
+        - $ref: '#/components/schemas/PingMessage'
+
+    # from Payments
+    AmountSingleValue:
+      required:
+        - value
+      type: object
+      properties:
+        value:
+          maximum: 1000000000000000
+          exclusiveMaximum: true
+          minimum: 0.01
+          type: number
+          description: unformatted value of the amount
+          example: 2303.56
+    Payment:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/Identifier'
+        hapoId:
+          $ref: '#/components/schemas/Identifier'
+        fileId:
+          $ref: '#/components/schemas/Identifier'
+        fileName:
+          $ref: '#/components/schemas/FileName'
+        paymentType:
+          $ref: '#/components/schemas/PaymentType'
+        debtor:
+          $ref: '#/components/schemas/PaymentParticipant'
+        ultimateDebtor:
+          $ref: '#/components/schemas/PaymentParticipant'
+        debtorAccountNo:
+          type: string
+          description: Account number or IBAN
+          example: DE89370400440532013000
+        debtorAgent:
+          type: string
+          description: BIC or bankcode - PAYM.BENEF
+          example: BHLAE20202
+        debitForm:
+          $ref: '#/components/schemas/DebitForm'
+        debitNote:
+          $ref: '#/components/schemas/DebitNote'
+        creditor:
+          $ref: '#/components/schemas/PaymentParticipant'
+        ultimateCreditor:
+          $ref: '#/components/schemas/PaymentParticipant'
+        creditorAccountNo:
+          type: string
+          description: Account number or IBAN - (DB PAYM.BENEFICIARY_ACCOUNT_NO)
+          example: DE89370400440532013000
+        creditorAgent:
+          type: string
+          description: BIC or bankcode
+          example: COBADEFF666
+        instructedAmount:
+          $ref: '#/components/schemas/Amount'
+        requestedExecutionDate:
+          type: string
+          description: must not be set, to request next banking working day
+          format: date
+          example: 2020-07-21
+        instructionPriority:
+          $ref: '#/components/schemas/InstructionPriority'
+        remittanceInformation:
+          $ref: '#/components/schemas/RemittanceInfo'
+        paymentState:
+          $ref: '#/components/schemas/PaymentState'
+        paymentFraudSigningRequired:
+          type: boolean
+          description: An additional payment authorization (or fraud approval) by the user is required (usually via 2FA)
+        collectiveApprovalRequiredBy:
+          type: string
+          description: Optional flag, if collective signing is required by this user or another (4-eyes principle)
+          enum:
+            - myself
+            - other
+            - none
+        batchBooking:
+          type: boolean
+          description: requested to execute this payment as a batch payment order
+        modifiable:
+          type: boolean
+          description: |
+           Is this payment modifiable in KEP?
+           - no for unsupported payment types (orange, red, ebill, ...)
+           - no for payments with unstructured addresses
+           - no if paymentStatus or user's entitlement doesn't permit changes
+           - other reasons
+        standingOrder:
+          $ref: '#/components/schemas/StandingOrder'
+    Payments:
+      allOf:
+        - $ref: '#/components/schemas/ResponseStatus'
+        - type: object
+          properties:
+            pageResponse:
+              $ref: '#/components/schemas/PageResponse'
+            payments:
+              type: array
+              items:
+                $ref: '#/components/schemas/Payment'
+    PaymentType:
+      description: |
+        The payment type indicates in which payment screen it should be displayed for modifications
+        - ACCOUNT_TRANSFER (EB type 6)
+        - SEPA (EB type 18)
+        - SWIFT_INTERNATIONAL (EB type 5)
+        - CH_RED (EB type 2 - deprecated)
+        - CH_ORANGE (EB type 12 - deprecated)
+        - CH_DOMESTIC (EB type 3 - domestic CHF/EUR + EB Type 4 - domestic FOREX)
+        - CH_QR_BILL (EB type 20 - QR payment QRR + EB type 21 - QR SCOR)
+        - BA_SAVING_PLAN_FIX_AMOUNT (EB type 7 - Balance Adjustment Fix Amount)
+        - BA_SAVING_PLAN_SURPLUS (EB type 8 - Balance Adjustment Surplus Amount)
+        - BA_SAVING_PLAN_FIX_AMOUNT_DEBIT_ACCOUNT (EB type 16 - Balance Adjustment Fix Amount Debit Account)
+        - BA_SAVING_PLAN_SURPLUS_DEBIT_ACCOUNT (EB type 17 - Balance Adjustment Surplus Amount Debit Account)
+        - BA_SAVING_PLAN_VP3 (EB type 19 - Balance Adjustment VP3 Account)
+      type: string
+      enum:
+        - ACCOUNT_TRANSFER
+        - BA_SAVING_PLAN_FIX_AMOUNT
+        - BA_SAVING_PLAN_SURPLUS
+        - BA_SAVING_PLAN_FIX_AMOUNT_DEBIT_ACCOUNT
+        - BA_SAVING_PLAN_SURPLUS_DEBIT_ACCOUNT
+        - BA_SAVING_PLAN_VP3
+        - SEPA
+        - SWIFT_INTERNATIONAL
+        - CH_RED
+        - CH_ORANGE
+        - CH_DOMESTIC
+        - CH_QR_BILL
+    PaymentsSearchRequest:
+      type: object
+      properties:
+        pageRequest:
+          $ref: '#/components/schemas/PageRequest'
+        sort:
+          type: object
+          properties:
+            orders:
+              type: array
+              items:
+                $ref: '#/components/schemas/Order'
+          description: Specifies by which fields and direction (ASC,DESC) the information
+            should be sorted.
+        paymentFilter:
+          $ref: '#/components/schemas/PaymentFilter'
+    Order:
+      type: object
+      properties:
+        property:
+          $ref: '#/components/schemas/PaymentSortFields'
+        direction:
+          $ref: '#/components/schemas/SortDirection'
+      description: Specifies which field should be used in the sorting. ASC direction
+        is used if none is specified.
+    PaymentSortFields:
+      type: string
+      description: Specifies the available sorting properties
+      enum:
+        - DEBTORACCOUNTNO
+        - PAYMENTSTATE
+        - CREATIONDATE
+        - LASTMODIFIEDDATE
+    PaymentsAmountRangeFilter:
+      type: object
+      properties:
+        amountFrom:
+          $ref: '#/components/schemas/AmountSingleValue'
+        amountTo:
+          $ref: '#/components/schemas/AmountSingleValue'
+      description: Filter by between Amounts [AmountFrom, AmountTo].
+    PaymentFilter:
+      type: object
+      properties:
+        debtorAccountNo:
+          type: string
+          example: DE89370400440532013000
+        instructedAmount:
+          $ref: '#/components/schemas/PaymentsAmountRangeFilter'
+        requestedExecutionDate:
+          $ref: '#/components/schemas/DateRangeFilter'
+      description: Filters the payments based on the specified filter criteria. In
+        the absence of filter criteria, payments returned are based on the user permissions.
+    FileName:
+      type: string
+      description: Name of the creditTransfer file, as received from POST request
+        for uploading or generated by backend.
+
+    # from Payment definitions
+    DateSimple:
+      type: string
+      description: date in format according to RFC3339
+      format: date
+      example: 2020-07-21
+    DebitForm:
+      type: string
+      description: |-
+        Purpose of the payment. It can be used to control the debit advice.
+              NOA = No advice
+              SIA = Single advice
+              CND = Collective advice no details
+              CWD = Collective advice with details
+      enum:
+        - NOA
+        - SIA
+        - CND
+        - CWD
+    DebitNote:
+      maxLength: 35
+      type: string
+      description: Booking text given by debtor when creating payment. Text isn't
+        forwarded to creditor and shown only on debit side
+      example: Expenses during company trip
+    IBAN:
+      pattern: '^([A-Z]{2}[ \-]?[0-9]{2})(?=(?:[ \-]?[A-Z0-9]){9,30}$)((?:[ \-]?[A-Z0-9]{3,5}){2,7})([ \-]?[A-Z0-9]{1,3})?$'
+      type: string
+      description: An IBAN.
+      example: DE89370400440532013000
+    Interval:
+      type: string
+      enum:
+        - DAILY
+        - WEEKLY
+        - BIWEEKLY
+        - MONTHLY
+        - BIMONTHLY
+        - QUARTERLY
+        - SEMIANNUAL
+        - ANNUAL
+    InstructionPriority:
+      type: string
+      description: |-
+        Instruction Priority with value HIGH may result in additional charges.
+        > *NORM is default*
+      default: NORM
+      enum:
+        - HIGH
+        - NORM
+    PaymentParticipant:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          maxLength: 70
+          minLength: 1
+          type: string
+          description: Name of the creditor/debtor
+          example: Max Musterman
+        address:
+          $ref: '#/components/schemas/PostalAddress'
+    Amount:
+      required:
+        - currency
+        - value
+      type: object
+      properties:
+        currency:
+          $ref: '#/components/schemas/Currency'
+        value:
+          maximum: 1000000000000000
+          exclusiveMaximum: true
+          minimum: 0.01
+          type: number
+          description: unformatted value of the amount
+          example: 2303.56
+    PaymentState:
+      description: |
+        The current processing state of the payment
+
+        Modifiable, but not ready for execution
+        - UNSIGNED - must be signed by at least one other user - 15 Erfasst
+        - ENTERED_BY_THIRD_PARTY_SYSTEM - must be signed by at least one other user - 44 Drittsystem
+        - PARTIALLY_SIGNED - signed by one user and must be signed by another - 23 1. Unterschrift
+
+        Modifiable and ready for execution
+        - READY_FOR_EXECUTION - payment is ready for execution - 25 Bereit
+        - PARTIALLY_DELETED - deletion signed by one user and must be signed by another - 24 1. L�schung
+
+        Not modifiable and processing
+        - PROCESSING - locked for processing - 3 In Bearbeitung
+        - SUBMITTED - submitted to payment processing system - 5 Weitergeleitet
+        - IN_PROCESS - payment processing system is processing the payment - 35 In Arbeit
+        - SENT - payment is processed, but not yet booked - 18 Buchung versendet
+        - IN_POST_PROCESS - payment processing system is postprocessing the payment - 40 In Nachbearbeitung
+        - POSTPONED - payment processing system has postponed the payment - 42 Zur�ckgestellt
+
+        Pre-final state (scheduled payment)
+        - REJECTED - payment was rejected by the processing system - 4 Abgewiesen
+
+        Final state (scheduled payment)
+        - DELETED - deleted by user - 12 Gel�scht
+        - EXECUTED_AGAIN - this rejected payment was executed again - 41 Erneut ausgef�hrt
+        - REJECTION_ACCEPTED - user has accepted the rejection - 38 Abweisung akzeptiert
+        - INCORRECT - payment is incorrect - 16 Fehlerhaft
+
+        Final state (archived payment)
+        - BOOKED - payment is booked - 8 Verbucht / DONE
+        - MERGED - payment is merged to another bank - 39 Fusioniert
+
+        Standing Order states (standing orders)
+        - INACTIVE - standing order was deactivated either by user or because requested executions are met - 0 Inactive
+        - EXPIRED - standing order is expired - 9 Expired
+        - PARTIALLY_INACTIVE - deactivation signed by one user and must be signed by another - 33 1. Deaktivierung
+
+      type: string
+      enum:
+        - UNSIGNED
+        - ENTERED_BY_THIRD_PARTY_SYSTEM
+        - PARTIALLY_SIGNED
+        - READY_FOR_EXECUTION
+        - PARTIALLY_DELETED
+        - PROCESSING
+        - SUBMITTED
+        - IN_PROCESS
+        - SENT
+        - IN_POST_PROCESS
+        - POSTPONED
+        - REJECTED
+        - DELETED
+        - EXECUTED_AGAIN
+        - REJECTION_ACCEPTED
+        - INCORRECT
+        - BOOKED
+        - MERGED
+        - INACTIVE
+    PostalAddress:
+      description: Either use adrLine1 and adrLine2 for a customized address or streetNm,
+        buildingNm, postalCode for a structured address. Do not use together.</br>
+        TownNm and country are always needed in both cases.
+      type: object
+      properties:
+        adrLine1:
+          maxLength: 70
+          type: string
+          description: Address information is presented in free format text. Used
+            for backward compatibility with existing payments. New payments need to
+            use structured addresses.
+          example: Our Street
+          deprecated: true
+        adrLine2:
+          maxLength: 70
+          type: string
+          description: Address information is presented in free format text. Used
+            for backward compatibility with existing payments. New payments need to
+            use structured addresses.
+          example: 54321 Our City
+          deprecated: true
+        streetName:
+          maxLength: 70
+          type: string
+          description: Street name; StrtNm (iso)
+          example: Berliner Platz
+        buildingNm:
+          maxLength: 16
+          type: string
+          description: Building Number (BldgNb)
+          example: 16B
+        postalCode:
+          maxLength: 16
+          type: string
+          description: Postal code - Postleitzahl; PstCd (iso)
+          example: "2234"
+        townName:
+          maxLength: 35
+          type: string
+          description: Town Name
+          example: Maxtown
+        country:
+          pattern: ^[A-Za-z]{2,2}$
+          type: string
+          description: Country code
+          example: DE
+    RemittanceInfo:
+      type: object
+      properties:
+        unstructured:
+          maxLength: 140
+          type: string
+          description: Unstructured remittance information - max 140 chars
+          example: Amazon payment 12345
+        structured:
+          $ref: '#/components/schemas/StructuredRemittance'
+    StructuredRemittance:
+      type: object
+      required:
+        - ref
+      properties:
+        ref:
+          maxLength: 35
+          minLength: 1
+          type: string
+          description: Unique and unambiguous reference assigned by the creditor to refer to the payment transaction.  ISO 11649 "RF<checksum><21 characters maximum>" format might be used.
+          example: 0003/4711 Sozalleistung
+        issr:
+          maxLength: 35
+          minLength: 1
+          type: string
+          description: Issuer of the reference.
+          example: VRG VIRT Lohnverrechnung
+    StandingOrder:
+      required:
+        - firstOn
+        - interval
+      type: object
+      properties:
+        firstOn:
+          $ref: '#/components/schemas/DateSimple'
+        lastOn:
+          $ref: '#/components/schemas/DateSimple'
+        beforeHoliday:
+          type: boolean
+        interval:
+          $ref: '#/components/schemas/Interval'
+        active:
+          type: boolean
+          description: |
+            Standing orders can be active or inactive
+        remainingExecutions:
+          minimum: 0
+          maximum: 9999
+          type: integer
+          description: |
+            number of remaining executions for this standing order
+        lastDayOfMonth:
+          type: boolean
+          description: |
+            describes whether the standing order should be executed always on the last day of the month (31st, 28th or 30th depending on month)
+      description: |-
+        Standing order attributes for generating payments, need to be filled completely to place standing order or empty to place single
+        firstOn - first payment generation date, relevant for all following generations based on given interval lastOn - end date of payment generation, might meet an interval or not
+
+    # common definitions
+    Currency:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          description: currency (ISO 4217).
+          example: CHF
+          minLength: 3
+          maxLength: 3
+    DateRangeFilter:
+      type: object
+      description: Filter by between date from to until and interval. Using the DateRangeFilter the date can be filter using an range. If the from date is not specified, the the filter <= to will be applied. If the to date is not specified the the from filter >= from will be applied.
+      properties:
+        from:
+          type: string
+          format: date
+          description: date in format according to RFC3339
+          example: 2019-01-15T00:00:00.000+0000
+        to:
+          type: string
+          format: date
+          description: date in format according to RFC3339
+          example: 2019-01-15T00:00:00.000+0000
+    Identifier:
+      type: string
+      description: Serializable identity allowing real value obfuscation.
+      example: AABKXXKKSSK
+    MessageCategory:
+      type: string
+      description: The category describing the severity of the message.
+      enum:
+        - INFO
+        - ERROR
+        - WARN
+    PageRequest:
+      type: object
+      description: The meta data describing a request for paginated resource.
+      properties:
+        page:
+          type: integer
+          format: int32
+          description: The zero based number of the page to return
+        size:
+          type: integer
+          format: int32
+          description: The number of items to return in a page
+    PageResponse:
+      type: object
+      description: The meta data describing the paginated resource
+      properties:
+        number:
+          type: integer
+          format: int32
+          description: The zero-based page number
+        numberOfElements:
+          type: integer
+          format: int32
+          description: The number of items in this page
+        size:
+          type: integer
+          format: int32
+          description: The page size, i.e. the number of items per page
+        totalElements:
+          type: integer
+          format: int64
+          description: The total number of available items
+        totalPages:
+          type: integer
+          format: int32
+          description: The total number of pages, based on size and totalElements
+    ResponseMessage:
+      type: object
+      description: Common response message object.
+      required:
+        - category
+        - code
+      properties:
+        category:
+          $ref: "#/components/schemas/MessageCategory"
+        code:
+          type: string
+          description: A technical code describing the message content and the semantics of the additional params
+          example: TRANSACTION_ACCEPTED
+        params:
+          type: object
+          description: The additional data fields for complex objects or base64-encoded binary data. The supported fields and their interpretation depends on the technical message code describing the message content
+          additionalProperties:
+            type: object
+            properties: {}
+            example: 2019-01-12T11:34:56Z
+        path:
+          type: string
+          description: The JSON path in case of field validation. If not set, the message is a global response message. If this field is set, the text contains a field-specific message.
+            The elements of the JSON structure are separated by dots (.) and arrays are represented with square brackets ([]).
+          example: creditor.name
+    ResponseStatus:
+      type: object
+      description: The generic status-object for responses
+      required:
+        - _status
+        - _timestamp
+      properties:
+        _status:
+          type: boolean
+          example: true
+          description: Indicates the success or failure of request processing. Helpful for early processing by the API clients
+        _messages:
+          type: array
+          description: The list of status messages
+          items:
+            $ref: "#/components/schemas/ResponseMessage"
+        _timestamp:
+          type: string
+          format: date-time
+          description: The response timestamp. The timestamp may be reported in a client UI message when instructing the user to contact the call center, so that it can be used when reporting issues, e.g. for correlating the issue a user experienced with the corresponding application log entries
+    SortDirection:
+      type: string
+      description: Specifies which direction should be used in the sorting
+      enum:
+        - ASC
+        - DESC
+
+
+  ####################
+  # Common responses
+  ####################
+  responses:
+    BadRequest:
+      description: The server cannot or will not process the request due to something that is perceived to be a client error (e.g. malformed request syntax).
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/ResponseStatus'
+          example:
+            _status: false
+            _messages:
+              - category: ERROR
+                code: INVALID_DATE
+                params:
+                  - operation.executionDate: "1020-10-14"
+                path: "operation.executionDate"
+                text: "The provided date 1020-10-14 is invalid"
+            _timestamp: "2020-10-14T10:11:10.424Z"
+    Unauthorized:
+      description: The user is not authenticated or the access token is missing or is invalid.
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/ResponseStatus'
+          example:
+            _status: false
+            _messages:
+              - category: ERROR
+                code: ERROR_UNAUTHORIZED
+                text: "Unauthorized access"
+            _timestamp: "2020-10-14T10:11:10.424Z"
+    Forbidden:
+      description: The user is authenticated, but is not allowed to access the requested resource based on business permissions.
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/ResponseStatus'
+          example:
+            _status: false
+            _messages:
+              - category: ERROR
+                code: ERROR_ACCESS_DENIED
+            _timestamp: "2020-10-14T10:11:10.424Z"
+    NotFound:
+      description: >-
+        No resource at the requested URI. This status indicates the server does not expose any resources at the supplied URI. It is never used as an indication that a search operation did not find any matches.
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/ResponseStatus'
+          example:
+            _status: false
+            _messages:
+              - category: ERROR
+                code: ERROR_ENTITY_NOT_FOUND
+            _timestamp: "2020-10-14T10:11:10.424Z"
+    Conflict:
+      description: >-
+        This status indicates there was a conflict during creating resource (e.g., resource already exists) or
+        updating a resource (e.g., version mismatch).
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/ResponseStatus'
+          example:
+            _status: false
+            _messages:
+              - category: ERROR
+                code: DUPLICATED_RESOURCE
+                text: "Error on creating an already existent resource"
+            _timestamp: "2020-10-14T10:11:10.424Z"
+    IfMatchFailed:
+      description: >-
+        This status indicated that access to the target resource has been denied because the If-Match precondition has failed.
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/ResponseStatus'
+          example:
+            _status: false
+            _messages:
+              - category: ERROR
+                code: RESOURCE_UNAVAILABLE
+                text: "Error on updating a different version of the resource"
+            _timestamp: "2020-10-14T10:11:10.424Z"
+    UnprocessableEntity:
+      description: >-
+        The request is well-formed but cannot be processed due to semantical errors. The response body contains further information (see the ResponseStatus definition for details).
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/ResponseStatus'
+          example:
+            _status: false
+            _messages:
+              - category: ERROR
+                code: ERROR_ENTITY_UNPROCESSABLE
+            _timestamp: "2020-10-14T10:11:10.424Z"
+
+    Default:
+      description: Default response
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/ResponseStatus'
+          example:
+            _status: false
+            _messages:
+              - category: ERROR
+                code: ERROR_GENERIC
+                text: Internal Error
+            _timestamp: "2020-10-14T10:11:10.424Z"
+
+  securitySchemes:
+    RchInternalIamJwtBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
